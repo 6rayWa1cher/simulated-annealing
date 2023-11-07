@@ -1,11 +1,13 @@
 import math
 import random
 
+import numpy as np
 from tqdm import trange
 
 
 class SimulatedAnnealing:
-    def __init__(self, f_func, k, t0, t_func, a_func, x_0, h_func, seed, bound_left, bound_right):
+    def __init__(self, f_func, k, t0, t_func, a_func, x_0, h_func, seed, bound_left, bound_right,
+                 skip_unsuccessful=False):
         self.a_func = a_func
         self.t_func = t_func
         self.f_func = f_func
@@ -16,6 +18,7 @@ class SimulatedAnnealing:
         self.h_func = h_func
         self.seed = seed
         self.bounds = bound_left, bound_right
+        self.skip_unsuccessful = skip_unsuccessful
 
     def optimize(self):
         random.seed(self.seed)
@@ -26,14 +29,18 @@ class SimulatedAnnealing:
 
         min_x0 = self.x_0
         min_e = e
-        for i in trange(1, self.k):
+
+        self.trace = np.zeros((self.k, 4))
+        for i in trange(1, self.k + 1):
+            self.trace[i-1] = x, e, min_x0, min_e
             if e < min_e:
                 min_x0 = x
                 min_e = e
 
             t = self.t_func(self.t0, t, i)
 
-            while True:
+            first = True
+            while first or not self.skip_unsuccessful:
                 x_new = self.a_func(x, t, self.bounds)
                 e_new = self.f_func(x_new)
 
@@ -43,6 +50,7 @@ class SimulatedAnnealing:
                     x = x_new
                     e = e_new
                     break
+                first = False
 
         return min_x0
 
@@ -88,10 +96,12 @@ def sgn(x):
 
 def superfast_a_func(x, t, bounds):
     a, b = bounds
-    alpha = random.random()
-    z = sgn(alpha - 0.5) * t * ((1 + 1 / t) ** abs(2 * alpha - 1) - 1)
-    return min(max(x + z * (b - a), a), b)
-
+    x_new = b + b
+    while not a <= x_new <= b:
+        alpha = random.random()
+        z = sgn(alpha - 0.5) * t * ((1 + 1 / t) ** abs(2 * alpha - 1) - 1)
+        x_new = x + z * (b - a)
+    return x_new
 
 def test_func_1(x):
     return x ** 4 + (x - 1.4) ** 3 + (x - 3) ** 2 + x - 1
@@ -135,19 +145,19 @@ if __name__ == '__main__':
     test_cases = [
         (test_func_1, -1.74, 0, -5, 5),
         (test_func_2, 0, 20, -100, 100),
-        (test_func_3, 4.568, 10, 0, 4),
+        (test_func_3, 4.568, 10, 0, 4 * math.pi),
         (test_func_4, -1.722, -8, -3 * math.pi, 3 * math.pi),
         (test_func_5, 8.798, -9, -3 * math.pi, 3 * math.pi)
     ]
     methods = [
         ('boltzman', boltzman_t_func, boltzman_a_func, 25),
         ('cauchy', cauchy_t_func, cauchy_a_func, 25),
-        ('superfast_1_-160', make_superfast_t_func(1, -160), superfast_a_func, 1e-3)
+        ('superfast_1_-160', make_superfast_t_func(1, -160), superfast_a_func, 1e-7)
     ]
     for method_name, t_func, a_func, t0 in methods:
-        for k in (500, 2000, 10000, 50000, int(5e5)):
+        for k in (500, 2000, 10000, 50000):
             print('method', method_name, 'k', k)
             s = score(
                 lambda func, x0, a, b: SimulatedAnnealing(func, k, t0, t_func, a_func, x0, exp_h_func, 0, a, b),
                 test_cases)
-            print('scoring', s)
+            print('scoring', s[1])
