@@ -32,7 +32,7 @@ class SimulatedAnnealing:
         min_e = e
 
         self.trace = np.zeros((self.k, 4))
-        for i in trange(1, self.k + 1):
+        for i in range(1, self.k + 1):
             self.trace[i-1] = x, e, min_x0, min_e
             if e < min_e:
                 min_x0 = x
