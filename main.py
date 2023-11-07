@@ -22,6 +22,7 @@ class SimulatedAnnealing:
 
     def optimize(self):
         random.seed(self.seed)
+        np.random.seed(self.seed)
         e = self.f_func(self.x_0)
         x = self.x_0
 
