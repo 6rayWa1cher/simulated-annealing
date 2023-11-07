@@ -33,7 +33,7 @@ class SimulatedAnnealing:
 
         self.trace = np.zeros((self.k, 4))
         for i in range(1, self.k + 1):
-            self.trace[i-1] = x, e, min_x0, min_e
+            self.trace[i - 1] = x, e, min_x0, min_e
             if e < min_e:
                 min_x0 = x
                 min_e = e
@@ -82,11 +82,11 @@ def cauchy_a_func(x, t, bounds):
 
 
 def make_superfast_t_func(m, n):
-    c = max(m * math.exp(-n), 1e-200)
+    c = max(m * math.exp(-n), 1e-300)
     d = math.exp(-c)
 
     def func(t0, t, k):
-        return max(t * d, 1e-200)
+        return max(t * d, 1e-300)
 
     return func
 
@@ -103,6 +103,20 @@ def superfast_a_func(x, t, bounds):
         z = sgn(alpha - 0.5) * t * ((1 + 1 / t) ** abs(2 * alpha - 1) - 1)
         x_new = x + z * (b - a)
     return x_new
+
+
+def boltzman_t_exp(t0, t, k):
+    return t * 0.99
+
+
+def superfast_t_exting(m, n, q):
+    c = m * np.exp(-n)
+
+    def func(t0, t, k):
+        return max(t0 * np.exp(-c * (k ** q)), 1e-300)
+
+    return func
+
 
 def test_func_1(x):
     return x ** 4 + (x - 1.4) ** 3 + (x - 3) ** 2 + x - 1
